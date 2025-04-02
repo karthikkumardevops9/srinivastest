@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:     
-      - main
+      - release
 
 pool:
   name: Default
@@ -13,26 +13,35 @@ stages:
   - job: CI
     displayName: 'Continuous Integration'
     steps:
+    # Skip NuGet Restore for Leadtools
+    - task: NuGetCommand@2
+      displayName: Restore NuGet Packages
+      inputs:
+        command: 'restore'
+        restoreSolution: '*/.sln'
+        arguments: |
+          -Exclude Leadtools.*
+
     - task: UseDotNet@2
       displayName: 'Install .NET Core SDK'
       inputs:
         packageType: 'sdk'
         version: '8.x'  
 
-    - task: NuGetCommand@2
-      displayName: 'NuGet Restore'
-      inputs:
-        command: 'restore'
-        restoreSolution: '**/*.sln'
-        feedsToUse: 'config'
-        nugetConfigPath: 'NuGet.config'
+    - script: dotnet restore net/DocumentService.csproj
+      displayName: 'Restore dependencies .NET'
 
-    - script: dotnet build --configuration Release
+    - script: dotnet build net/DocumentService.csproj --configuration Release
       displayName: 'Build application'
 
-    - script: dotnet publish --configuration Release --output $(Build.ArtifactStagingDirectory)
+    - script: dotnet publish net/DocumentService.csproj --configuration Release --output $(Build.ArtifactStagingDirectory)
       displayName: 'Publish Application'
-    
+
+    # # Include the bin folder in the artifact
+    # - powershell: |
+    #     Copy-Item -Path "$(Build.SourcesDirectory)\bin" -Destination "$(Build.ArtifactStagingDirectory)\bin" -Recurse
+    #   displayName: 'Include Bin Folder'
+
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Build Artifacts'
       inputs:
@@ -57,32 +66,12 @@ stages:
         packageType: 'sdk'
         version: '8.x'  
 
-# - stage: DeployUAT
-#   displayName: 'Deploy to UAT'
-#   dependsOn: DeployQA
-#   jobs:  
-#   - deployment: 'DeploytoUAT'
-#     displayName: 'DeployUAT'
-#     environment: 'UAT'
-#     strategy:
-#       runOnce:
-#         deploy:
-#           steps:
-#             - download: current
-#               artifact: drop
-#               displayName: 'Download Build Artifacts'           
-    
-#             - task: UseDotNet@2
-#               displayName: 'Install .NET Core SDK'
-#               inputs:
-#                 packageType: 'sdk'
-#                 version: '8.x'  
-
-#             - task: AzureRmWebAppDeployment@4
-#               displayName: 'Azure Web App Deploy to UAT'
-#               inputs:
-#                 ConnectionType: 'AzureRM'
-#                 azureSubscription: 'Azure_DevOps_Service_Connection'
-#                 appType: 'webApp'
-#                 WebAppName: 'webapp-apiuat-cc-fusionapi-001'
-#                 package: '$(Pipeline.Workspace)/drop/'
+    # - task: AzureRmWebAppDeployment@4
+    #   displayName: 'Azure Web App Deploy to QA'
+    #   inputs:
+    #     ConnectionType: AzureRM 
+    #     azureSubscription: 'Microservices_Connection'
+    #     appType: 'webApp'
+    #     #WebAppName: 'docviewer.azurewebsites.net' 
+    #     WebAppName: 'webapp-msqa-cc-documentviewer'
+    #     package: '$(Pipeline.Workspace)/drop'
