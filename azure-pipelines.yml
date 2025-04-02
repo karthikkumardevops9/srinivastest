@@ -28,10 +28,17 @@ stages:
     - script: dotnet publish --configuration Release --output $(Build.ArtifactStagingDirectory)
       displayName: 'Publish Application'
 
-    - task: PublishBuildArtifacts@1  
-      displayName: 'Publish Build Artifacts to Test Feed'
+    # Update appsettings.json *after* publishing in the published directory
+    - task: FileTransform@1
+      displayName: 'Update appsettings.json with Azure Blob Connection String'
       inputs:
-        pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'drop'
-        publishLocation: Container
-        feedName: 'test' 
+        folderPath: '$(Build.ArtifactStagingDirectory)'  # Target published directory
+        fileType: 'json'
+        targetFiles: '**/appsettings.json'
+
+    # - task: PublishBuildArtifacts@1  
+    #   displayName: 'Publish Build Artifacts to Test Feed'
+    #   inputs:
+    #     pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    #     ArtifactName: 'drop'
+    #     publishLocation: Container
