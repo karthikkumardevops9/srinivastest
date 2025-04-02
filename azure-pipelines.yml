@@ -4,8 +4,7 @@ trigger:
       - main  
 
 pool:
-  vmImage: 'windows-latest'
-
+  name: Default
 
 stages:
 - stage: Build
@@ -20,8 +19,8 @@ stages:
         packageType: 'sdk'
         version: '8.x'
 
-    - script: dotnet restore
-      displayName: 'Restore dependencies'
+    # - script: dotnet restore
+    #   displayName: 'Restore dependencies'
 
     - script: dotnet build --configuration Release
       displayName: 'Build application'
