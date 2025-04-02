@@ -4,7 +4,8 @@ trigger:
       - main  
 
 pool:
-  name: Default
+  vmImage: 'windows-latest'
+
 
 stages:
 - stage: Build
